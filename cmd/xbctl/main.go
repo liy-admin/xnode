@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,7 +32,7 @@ const (
 	serviceName            = "xboard-node.service"
 	serviceFilePath        = "/etc/systemd/system/xboard-node.service"
 	defaultInstallRoot     = "/etc/xboard-node"
-	downloadBase           = "https://github.com/cedar2025/xboard-node/releases"
+	downloadBase           = "https://github.com/liy-admin/xnode/releases"
 )
 
 var (
@@ -420,6 +422,19 @@ func runUpgrade(args []string) error {
 		return fmt.Errorf("download xbctl: %w", err)
 	}
 
+	sumsURL := resolveDownloadURL("SHA256SUMS", version)
+	fmt.Printf("Verifying checksums from %s...\n", sumsURL)
+	sums, err := fetchChecksums(sumsURL)
+	if err != nil {
+		return cleanupFiles(newBinary, newCLI, fmt.Errorf("download checksums: %w", err))
+	}
+	if err := verifyChecksum(newBinary, fmt.Sprintf("xboard-node-linux-%s", arch), sums); err != nil {
+		return cleanupFiles(newBinary, newCLI, err)
+	}
+	if err := verifyChecksum(newCLI, fmt.Sprintf("xbctl-linux-%s", arch), sums); err != nil {
+		return cleanupFiles(newBinary, newCLI, err)
+	}
+
 	if err := os.Chmod(newBinary, 0o755); err != nil {
 		return cleanupFiles(newBinary, newCLI, fmt.Errorf("chmod binary: %w", err))
 	}
@@ -616,6 +631,59 @@ func downloadFile(url, dest string) error {
 	defer f.Close()
 	_, err = io.Copy(f, resp.Body)
 	return err
+}
+
+// fetchChecksums downloads and parses a sha256sum-format checksum file.
+func fetchChecksums(url string) (map[string]string, error) {
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+	return parseChecksums(data), nil
+}
+
+// parseChecksums parses sha256sum output ("<hex>  <name>" or "<hex> *<name>")
+// into a name → lowercase hex digest map.
+func parseChecksums(data []byte) map[string]string {
+	sums := make(map[string]string)
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 2 || len(fields[0]) != sha256.Size*2 {
+			continue
+		}
+		sums[strings.TrimPrefix(fields[1], "*")] = strings.ToLower(fields[0])
+	}
+	return sums
+}
+
+// verifyChecksum compares the SHA-256 of path with the entry for artifact.
+func verifyChecksum(path, artifact string, sums map[string]string) error {
+	expected, ok := sums[artifact]
+	if !ok {
+		return fmt.Errorf("no checksum found for %s", artifact)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return err
+	}
+	if actual := hex.EncodeToString(h.Sum(nil)); actual != expected {
+		return fmt.Errorf("checksum mismatch for %s: expected %s, got %s", artifact, expected, actual)
+	}
+	return nil
 }
 
 func cleanupFiles(a, b string, err error) error {
@@ -1157,7 +1225,7 @@ func latestInstanceID(instances []*config.Config) string {
 func regenerateServiceFile() error {
 	unit := fmt.Sprintf(`[Unit]
 Description=Xboard Node Backend
-Documentation=https://github.com/cedar2025/xboard-node
+Documentation=https://github.com/liy-admin/xnode
 After=network-online.target
 Wants=network-online.target
 

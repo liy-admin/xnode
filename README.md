@@ -1,6 +1,8 @@
-# xboard-node
+# xnode
 
 Node backend for [Xboard](https://github.com/cedar2025/Xboard). Supports `sing-box` / `xray-core` dual kernels.
+
+Based on [cedar2025/xboard-node](https://github.com/cedar2025/xboard-node). Kernels are built from self-maintained forks, each an official upstream tag plus reviewed patches: [liy-admin/sing-box](https://github.com/liy-admin/sing-box) and [liy-admin/Xray-core](https://github.com/liy-admin/Xray-core). Release binaries are published with a `SHA256SUMS` file, which the installer and `xbctl upgrade` verify before installing.
 
 > **Disclaimer**: This project is for educational and learning purposes only.
 
@@ -19,28 +21,20 @@ Node backend for [Xboard](https://github.com/cedar2025/Xboard). Supports `sing-b
 ```bash
 docker run -d --restart=always --network=host \
   -e apiHost=https://panel.com -e apiKey=TOKEN -e nodeID=1 \
-  ghcr.io/cedar2025/xboard-node:latest
-```
-
-### Docker Compose
-
-```bash
-git clone -b compose --depth 1 https://github.com/cedar2025/xboard-node.git
-cd xboard-node
-vim config/config.yml   # set panel.url / token / node_id
-docker compose up -d
+  ghcr.io/liy-admin/xnode:latest
 ```
 
 ### Installer (Linux systemd)
 
 ```bash
 # Node mode
-curl -fsSL https://raw.githubusercontent.com/cedar2025/xboard-node/dev/install.sh | \
+curl -fsSL https://raw.githubusercontent.com/liy-admin/xnode/dev/install.sh | \
   sudo bash -s -- --mode node --panel https://panel.example.com --token TOKEN --node-id 1
 
 # Machine mode
-curl -fsSL https://raw.githubusercontent.com/cedar2025/xboard-node/dev/install.sh | \
+curl -fsSL https://raw.githubusercontent.com/liy-admin/xnode/dev/install.sh | \
   sudo bash -s -- --mode machine --panel https://panel.example.com --token TOKEN --machine-id 1
+```
 
 ## xbctl
 

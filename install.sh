@@ -27,7 +27,7 @@ DEFAULT_ACTION="install"
 DEFAULT_RELEASE_VERSION="latest"
 DEFAULT_LOG_LEVEL="info"
 DEFAULT_KERNEL_LOG_LEVEL="warn"
-DEFAULT_DOWNLOAD_BASE="https://github.com/cedar2025/xboard-node/releases"
+DEFAULT_DOWNLOAD_BASE="https://github.com/liy-admin/xnode/releases"
 
 ACTION="${DEFAULT_ACTION}"
 MODE=""
@@ -489,6 +489,33 @@ resolve_download_url() {
     fi
 }
 
+# verify_checksum checks a downloaded artifact against the release's SHA256SUMS.
+verify_checksum() {
+    local file="$1"
+    local artifact="$2"
+    local sums="$TMP_DIR/SHA256SUMS"
+    if [ ! -f "$sums" ]; then
+        resolve_download_url "SHA256SUMS"
+        log_step "Downloading checksums: ${DOWNLOAD_URL}"
+        if ! curl -fsSL "$DOWNLOAD_URL" -o "$sums"; then
+            log_error "Failed to download checksums from ${DOWNLOAD_URL}"
+            exit 1
+        fi
+    fi
+    local expected actual
+    expected=$(awk -v a="$artifact" '{n=$2; sub(/^\*/, "", n); if (n == a) {print $1; exit}}' "$sums")
+    if [ -z "$expected" ]; then
+        log_error "No checksum found for ${artifact} in SHA256SUMS"
+        exit 1
+    fi
+    actual=$(sha256sum "$file" | awk '{print $1}')
+    if [ "$expected" != "$actual" ]; then
+        log_error "Checksum mismatch for ${artifact}: expected ${expected}, got ${actual}"
+        exit 1
+    fi
+    log_info "Checksum verified: ${artifact}"
+}
+
 stage_binary() {
     local staged="$TMP_DIR/xboard-node"
     local local_src
@@ -503,6 +530,7 @@ stage_binary() {
             log_error "Failed to download binary from ${DOWNLOAD_URL}"
             exit 1
         fi
+        verify_checksum "$staged" "xboard-node-linux-${ARCH}"
     fi
     chmod +x "$staged"
     if ! "$staged" -v >/dev/null 2>&1; then
@@ -535,6 +563,7 @@ stage_xbctl() {
             log_error "Failed to download xbctl from ${DOWNLOAD_URL}"
             exit 1
         fi
+        verify_checksum "$staged" "xbctl-linux-${ARCH}"
     fi
     chmod +x "$staged"
     if ! "$staged" version > /dev/null 2>&1; then
@@ -592,7 +621,7 @@ render_service() {
     cat >"$TMP_DIR/${SERVICE_NAME}" <<EOF_UNIT
 [Unit]
 Description=Xboard Node Backend
-Documentation=https://github.com/cedar2025/xboard-node
+Documentation=https://github.com/liy-admin/xnode
 After=network-online.target
 Wants=network-online.target
 
