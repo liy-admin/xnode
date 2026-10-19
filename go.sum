@@ -120,10 +120,6 @@ github.com/caddyserver/certmagic v0.25.2 h1:D7xcS7ggX/WEY54x0czj7ioTkmDWKIgxtIi2
 github.com/caddyserver/certmagic v0.25.2/go.mod h1:llW/CvsNmza8S6hmsuggsZeiX+uS27dkqY27wDIuBWg=
 github.com/caddyserver/zerossl v0.1.5 h1:dkvOjBAEEtY6LIGAHei7sw2UgqSD6TrWweXpV7lvEvE=
 github.com/caddyserver/zerossl v0.1.5/go.mod h1:CxA0acn7oEGO6//4rtrRjYgEoa4MFw/XofZnrYwGqG4=
-github.com/cedar2025/Xray-core v0.0.0-20260409213332-f47935539965 h1:fuJYmFZ1N58sIA9LqzOcEhJrxeWsvBKPOR4mvZLtWig=
-github.com/cedar2025/Xray-core v0.0.0-20260409213332-f47935539965/go.mod h1:OXMlhBloFry8mw0KwWLWLd3RQyXJzEYsCGlgsX36h60=
-github.com/cedar2025/sing-box v1.14.0-alpha.2.0.20260316103356-2e665cb7e295 h1:bmtrfItcjIJ/jGfz17Ic1WBzjPP3aBdAGgagL8X5IPQ=
-github.com/cedar2025/sing-box v1.14.0-alpha.2.0.20260316103356-2e665cb7e295/go.mod h1:DTyWqWrjh/DqOHynCUgMhW8fgrkctleficRKwQmh668=
 github.com/cenkalti/backoff/v4 v4.0.2/go.mod h1:eEew/i+1Q6OrCDZh3WiXYv3+nJwBASZ8Bog/87DQnVg=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
@@ -539,6 +535,10 @@ github.com/libdns/vultr/v2 v2.0.4 h1:4V1OSiUnYvFfpFBicdM27JEnAF0D694cmmQ3AyNqobA
 github.com/libdns/vultr/v2 v2.0.4/go.mod h1:u5Vgx6UG44bMLFKzqHdixc+o2TfP8aGUUmEZk4asH9o=
 github.com/linode/linodego v1.56.0 h1:WO2ztR6/hdfqCIeZnC8DyYb+AXnuWOl4FB/qqK6T5HE=
 github.com/linode/linodego v1.56.0/go.mod h1:W5+QH6nCppgi5gud/b16uAKOzTtfuwzjOHEFA7bKOd0=
+github.com/liy-admin/Xray-core v0.0.0-20261019124854-13d4180f482a h1:5cBdcF7HCM0Cd8RLmyIVq/Qc8NorlsnrKq0LOQl4rHA=
+github.com/liy-admin/Xray-core v0.0.0-20261019124854-13d4180f482a/go.mod h1:OXMlhBloFry8mw0KwWLWLd3RQyXJzEYsCGlgsX36h60=
+github.com/liy-admin/sing-box v1.14.0-alpha.2.0.20261019124853-454458fbfa7b h1:Lkx9tw+t2T98DWqXonL6uLqFdyhWrDryfbPIv10H1as=
+github.com/liy-admin/sing-box v1.14.0-alpha.2.0.20261019124853-454458fbfa7b/go.mod h1:DTyWqWrjh/DqOHynCUgMhW8fgrkctleficRKwQmh668=
 github.com/logrusorgru/aurora v2.0.3+incompatible h1:tOpm7WcpBTn4fjmVfgpQq0EfczGlG91VSDkswnjF5A8=
 github.com/logrusorgru/aurora v2.0.3+incompatible/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 h1:6E+4a0GO5zZEnZ81pIr0yLvtUWk2if982qA3F3QD6H4=
