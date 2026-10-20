@@ -82,8 +82,10 @@ type filePanelConfig struct {
 }
 
 type fileMachineConfig struct {
-	MachineID int    `yaml:"machine_id"`
-	TokenEnv  string `yaml:"token_env,omitempty"`
+	MachineID    int    `yaml:"machine_id"`
+	TokenEnv     string `yaml:"token_env,omitempty"`
+	AutoNode     *bool  `yaml:"auto_node,omitempty"`
+	AutoNodeHost string `yaml:"auto_node_host,omitempty"`
 }
 
 type fileNodeConfig struct {
@@ -209,7 +211,7 @@ func printUsage() {
   xbctl service status|start|stop|restart|enable|disable|logs
   xbctl health
   xbctl bind add-node --panel-url URL --token TOKEN --node-id ID [--node-type TYPE] [--kernel singbox|xray]
-  xbctl bind add-machine --panel-url URL --token TOKEN --machine-id ID [--kernel singbox|xray]
+  xbctl bind add-machine --panel-url URL --token TOKEN --machine-id ID [--kernel singbox|xray] [--auto-node-host HOST] [--auto-node true|false]
   xbctl bind remove <instance-id>
   xbctl bind remove-node --panel URL --node-id ID
   xbctl bind remove-machine --panel URL --machine-id ID
@@ -978,8 +980,10 @@ func writeRootConfig(path string, root *config.RootConfig) error {
 		}
 		if inst.IsMachineMode() && inst.Machine != nil {
 			fi.Machine = &fileMachineConfig{
-				MachineID: inst.Machine.MachineID,
-				TokenEnv:  inst.Machine.TokenEnv,
+				MachineID:    inst.Machine.MachineID,
+				TokenEnv:     inst.Machine.TokenEnv,
+				AutoNode:     inst.Machine.AutoNode,
+				AutoNodeHost: inst.Machine.AutoNodeHost,
 			}
 			fi.Panel.NodeID = 0
 			fi.Panel.NodeType = ""
@@ -1298,6 +1302,8 @@ func runConfigInit(args []string) error {
 		installRoot    string
 		token          string
 		releaseVersion string
+		autoNodeHost   string
+		autoNode       *bool
 	)
 
 	for i := 0; i < len(args); i++ {
@@ -1372,6 +1378,16 @@ func runConfigInit(args []string) error {
 		case "--version":
 			i++
 			releaseVersion = args[i]
+		case "--auto-node-host":
+			i++
+			autoNodeHost = strings.TrimSpace(args[i])
+		case "--auto-node":
+			i++
+			v, err := strconv.ParseBool(args[i])
+			if err != nil {
+				return fmt.Errorf("invalid --auto-node: %w", err)
+			}
+			autoNode = &v
 		}
 	}
 
@@ -1400,7 +1416,7 @@ func runConfigInit(args []string) error {
 	}
 
 	if mode == "machine" {
-		inst.Machine = &config.MachineConfig{MachineID: machineID}
+		inst.Machine = &config.MachineConfig{MachineID: machineID, AutoNode: autoNode, AutoNodeHost: autoNodeHost}
 	} else {
 		inst.Panel.NodeID = nodeID
 		if nodeType != "" {

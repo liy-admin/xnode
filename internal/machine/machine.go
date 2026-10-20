@@ -5,8 +5,10 @@ package machine
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cedar2025/xboard-node/internal/config"
@@ -53,6 +55,12 @@ type Orchestrator struct {
 
 	pullInterval time.Duration
 	pushInterval time.Duration
+
+	// autoNodeOff stops auto-node requests: disabled in config, or the panel
+	// has no auto-node endpoint.
+	autoNodeOff     atomic.Bool
+	autoNodeMu      sync.Mutex
+	lastAutoNodeMsg string // last non-success outcome, to avoid repeating logs
 }
 
 // New creates a machine orchestrator from the given config.
@@ -62,19 +70,21 @@ func New(cfg *config.Config) *Orchestrator {
 		Token:     cfg.Machine.Token,
 		MachineID: cfg.Machine.MachineID,
 	}
-	return &Orchestrator{
+	o := &Orchestrator{
 		cfg:       cfg,
 		client:    panel.NewClient(panelCfg),
 		nodes:     make(map[int]*nodeHandle),
 		mailboxes: make(map[int]*controlplane.NodeMailbox),
 		statuses:  make(map[int]chan<- controlplane.StatusChange),
 	}
+	o.autoNodeOff.Store(!cfg.Machine.AutoNodeEnabled())
+	return o
 }
 
 // Run is the main loop. It blocks until ctx is cancelled.
 func (o *Orchestrator) Run(ctx context.Context) error {
 	o.runCtx = ctx
-	nodesResp, err := o.client.GetMachineNodes()
+	nodesResp, err := o.discoverNodes()
 	if err != nil {
 		return fmt.Errorf("initial node discovery: %w", err)
 	}
@@ -223,7 +233,7 @@ func (o *Orchestrator) stopAll() {
 // ─── Node discovery ──────────────────────────────────────────────────────
 
 func (o *Orchestrator) rediscover(ctx context.Context) {
-	nodesResp, err := o.client.GetMachineNodes()
+	nodesResp, err := o.discoverNodes()
 	if err != nil {
 		nlog.Core().Warn("machine node discovery failed", "error", err)
 		return
@@ -249,6 +259,59 @@ func (o *Orchestrator) rediscover(ctx context.Context) {
 
 	for _, n := range nodesResp.Nodes {
 		o.startNode(ctx, n) // no-op if already running
+	}
+}
+
+// discoverNodes fetches the machine's nodes and, when there are none, asks the
+// panel to create one (machine_auto_node plugin) and fetches again.
+func (o *Orchestrator) discoverNodes() (*panel.MachineNodesResponse, error) {
+	nodesResp, err := o.client.GetMachineNodes()
+	if err != nil || len(nodesResp.Nodes) > 0 || !o.tryAutoNode() {
+		return nodesResp, err
+	}
+	return o.client.GetMachineNodes()
+}
+
+// tryAutoNode asks the panel to create the first node for this machine.
+// Returns true only when a node was created.
+func (o *Orchestrator) tryAutoNode() bool {
+	if o.autoNodeOff.Load() {
+		return false
+	}
+	o.autoNodeMu.Lock()
+	defer o.autoNodeMu.Unlock()
+
+	res, err := o.client.EnsureMachineNode(o.cfg.Machine.AutoNodeHost)
+	switch {
+	case errors.Is(err, panel.ErrAutoNodeUnsupported):
+		o.autoNodeOff.Store(true)
+		nlog.Core().Info("machine: panel has no auto-node endpoint (machine_auto_node plugin not enabled); add nodes to this machine in the panel")
+		return false
+	case err != nil:
+		o.logAutoNodeOutcome(true, "machine: auto node request failed: "+err.Error())
+		return false
+	case res.Created:
+		o.lastAutoNodeMsg = ""
+		nlog.Core().Info(fmt.Sprintf("machine %d: panel auto-created node %v", o.cfg.Machine.MachineID, res.NodeIDs))
+		return true
+	default:
+		o.logAutoNodeOutcome(false, "machine: panel did not create a node: "+res.Message)
+		return false
+	}
+}
+
+// logAutoNodeOutcome logs a non-success outcome once until it changes, since
+// rediscovery retries every pull interval.
+func (o *Orchestrator) logAutoNodeOutcome(warn bool, msg string) {
+	if msg == o.lastAutoNodeMsg {
+		nlog.Core().Debug(msg)
+		return
+	}
+	o.lastAutoNodeMsg = msg
+	if warn {
+		nlog.Core().Warn(msg)
+	} else {
+		nlog.Core().Info(msg)
 	}
 }
 

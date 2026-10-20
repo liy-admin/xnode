@@ -116,9 +116,12 @@ jobs:
         with:
           merge-multiple: true
           path: dist
+      - name: Package panel plugin
+        working-directory: panel-plugin
+        run: zip -qr ../dist/MachineAutoNode.zip MachineAutoNode
       - name: Generate checksums
         working-directory: dist
-        run: sha256sum xboard-node-linux-amd64 xboard-node-linux-arm64 xbctl-linux-amd64 xbctl-linux-arm64 > SHA256SUMS && cat SHA256SUMS
+        run: sha256sum xboard-node-linux-amd64 xboard-node-linux-arm64 xbctl-linux-amd64 xbctl-linux-arm64 MachineAutoNode.zip > SHA256SUMS && cat SHA256SUMS
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
@@ -129,4 +132,5 @@ jobs:
             dist/xboard-node-linux-arm64
             dist/xbctl-linux-amd64
             dist/xbctl-linux-arm64
+            dist/MachineAutoNode.zip
             dist/SHA256SUMS

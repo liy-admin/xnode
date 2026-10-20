@@ -3,6 +3,7 @@ package panel
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -337,6 +338,49 @@ func (c *Client) GetMachineNodes() (*MachineNodesResponse, error) {
 	var out MachineNodesResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return nil, fmt.Errorf("decode machine nodes: %w", err)
+	}
+	return &out, nil
+}
+
+// ErrAutoNodeUnsupported means the panel has no auto-node endpoint (the
+// machine_auto_node plugin is not installed or not enabled).
+var ErrAutoNodeUnsupported = errors.New("panel does not support auto node creation")
+
+// EnsureMachineNode asks the panel to create the first node for this machine
+// when it has none. host is the public address to register; empty lets the
+// panel use the request's source IP. Returns ErrAutoNodeUnsupported on 404.
+func (c *Client) EnsureMachineNode(host string) (*AutoNodeResponse, error) {
+	payload := map[string]interface{}{}
+	if host != "" {
+		payload["host"] = host
+	}
+	c.injectAuth(payload)
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+
+	resp, err := c.doRequest("POST", "/api/v2/server/machine/auto-node", body, "")
+	if err != nil {
+		return nil, fmt.Errorf("auto node: %w", err)
+	}
+	defer drainAndClose(resp.Body)
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, ErrAutoNodeUnsupported
+	}
+
+	var out AutoNodeResponse
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+	if err := json.Unmarshal(data, &out); err != nil && resp.StatusCode < 400 {
+		return nil, fmt.Errorf("decode auto node response: %w", err)
+	}
+	if resp.StatusCode >= 400 {
+		msg := out.Message
+		if msg == "" {
+			msg = strings.TrimSpace(string(data))
+		}
+		return nil, fmt.Errorf("auto node status %d: %s", resp.StatusCode, msg)
 	}
 	return &out, nil
 }
