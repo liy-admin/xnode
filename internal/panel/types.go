@@ -75,14 +75,6 @@ type MachineNodesResponse struct {
 	BaseConfig MachineBaseConfig  `json:"base_config"`
 }
 
-// AutoNodeResponse is the response from POST /api/v2/server/machine/auto-node
-// (machine_auto_node panel plugin).
-type AutoNodeResponse struct {
-	Created bool   `json:"created"`
-	NodeIDs []int  `json:"node_ids"`
-	Message string `json:"message"`
-}
-
 // MachineBaseConfig holds polling intervals for machine mode.
 type MachineBaseConfig struct {
 	PushInterval int `json:"push_interval"`

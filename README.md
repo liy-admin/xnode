@@ -36,23 +36,6 @@ curl -fsSL https://raw.githubusercontent.com/liy-admin/xnode/dev/install.sh | \
   sudo bash -s -- --mode machine --panel https://panel.example.com --token TOKEN --machine-id 1
 ```
 
-### Auto-create the first node (machine mode)
-
-With the [Machine Auto Node](panel-plugin/MachineAutoNode/README.md) panel plugin, a new
-server only needs the machine-mode command above: if the machine has no nodes yet, the
-panel creates a VLESS + Reality node for it and the server starts serving right away.
-
-1. Download `MachineAutoNode.zip` from the [latest release](https://github.com/liy-admin/xnode/releases/latest)
-   and upload it in the admin panel → Plugins, then install and enable it.
-2. In the plugin settings, turn on auto create and fill in the group IDs (port, SNI and
-   name template are optional).
-3. Run the machine-mode install command. Behind NAT, add `--node-host <public IP or domain>`;
-   to opt out, add `--no-auto-node`.
-
-The panel only creates a node while the machine has none (disabled nodes count), and the
-plugin settings, not the server, decide protocol, groups and port. Panels without the
-plugin are unaffected: the node checks once, logs a hint, and stops asking.
-
 ## xbctl
 
 Run `xbctl` after installation for help. Common commands:

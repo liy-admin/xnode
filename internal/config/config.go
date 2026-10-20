@@ -50,17 +50,6 @@ type MachineConfig struct {
 	MachineID int    `yaml:"machine_id"`
 	Token     string `yaml:"token"`
 	TokenEnv  string `yaml:"token_env,omitempty"`
-	// AutoNode asks the panel (machine_auto_node plugin) to create the first
-	// node when the machine has none. nil = enabled.
-	AutoNode *bool `yaml:"auto_node,omitempty"`
-	// AutoNodeHost is the public address reported for an auto-created node.
-	// Empty = let the panel use the request's source IP.
-	AutoNodeHost string `yaml:"auto_node_host,omitempty"`
-}
-
-// AutoNodeEnabled reports whether auto node creation is enabled (default true).
-func (m *MachineConfig) AutoNodeEnabled() bool {
-	return m != nil && (m.AutoNode == nil || *m.AutoNode)
 }
 
 // NodeEntry describes a single node in multi-node mode.

@@ -36,8 +36,6 @@ TOKEN=""
 NODE_ID=""
 NODE_TYPE=""
 MACHINE_ID=""
-NODE_HOST=""
-AUTO_NODE=1
 KERNEL_TYPE="${DEFAULT_KERNEL}"
 RELEASE_VERSION="${DEFAULT_RELEASE_VERSION}"
 HEALTH_PORT="${DEFAULT_HEALTH_PORT}"
@@ -185,12 +183,6 @@ usage() {
     --token, -t       Machine token
     --machine-id      Machine ID
 
-  MACHINE MODE AUTO NODE (needs the machine_auto_node panel plugin):
-    If the machine has no nodes, the panel creates a VLESS + Reality node for it.
-    --node-host       Public IP/domain to register for that node (default: the
-                      address the panel sees the request coming from)
-    --no-auto-node    Never ask the panel to create a node
-
   OPTIONAL:
     --node-type, -T     Explicit node type for node mode
     --kernel, -k        singbox or xray (default: singbox)
@@ -244,14 +236,6 @@ parse_args() {
             --machine-id)
                 MACHINE_ID="$2"
                 shift 2
-                ;;
-            --node-host)
-                NODE_HOST="$2"
-                shift 2
-                ;;
-            --no-auto-node)
-                AUTO_NODE=0
-                shift
                 ;;
             --kernel|-k)
                 KERNEL_TYPE="$2"
@@ -610,12 +594,6 @@ render_config() {
     fi
     if [ "$MODE" = "machine" ]; then
         init_args+=(--machine-id "$MACHINE_ID")
-        if [ -n "$NODE_HOST" ]; then
-            init_args+=(--auto-node-host "$NODE_HOST")
-        fi
-        if [ "$AUTO_NODE" -eq 0 ]; then
-            init_args+=(--auto-node false)
-        fi
     else
         init_args+=(--node-id "$NODE_ID")
         if [ -n "$NODE_TYPE" ]; then
